@@ -8,9 +8,8 @@ services:
     environment:
       - LLM_PROVIDER=${LLM_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      # AgentOps log directory will be set by entrypoint script
-      # To disable AgentOps entirely, set AGENTOPS_DISABLED=true
-      - AGENTOPS_DISABLED=${AGENTOPS_DISABLED:-false}
+      # Disable AgentOps to avoid permission issues on cluster environments
+      - AGENTOPS_DISABLED=true
     volumes:
       # Mount the current directory for development
       - .:/app
