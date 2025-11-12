@@ -7,6 +7,12 @@ from openai import AsyncOpenAI
 import agentlightning as agl
 from room_selector import room_selector, prompt_template_baseline
 from config import get_async_client
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich import print as rprint
+
+console = Console()
 
 
 def load_datasets():
@@ -93,9 +99,7 @@ def test_agent_baseline():
     """
     Test the agent with baseline prompt before training to verify it works.
     """
-    print("\n" + "=" * 60)
-    print("Testing Agent with Baseline Prompt")
-    print("=" * 60)
+    console.print("\n", Panel.fit("[bold cyan]Testing Agent with Baseline Prompt[/bold cyan]", border_style="cyan"))
     
     from config import get_client, get_default_model
     from room_selector import prompt_template_baseline
@@ -110,20 +114,29 @@ def test_agent_baseline():
         "expected_choice": "A103",
     }
     
-    print(f"\nTest Task:")
-    print(f"  People: {test_task['num_people']}, Requirements: {test_task['requirements']}")
-    print(f"  Expected room: {test_task['expected_choice']}")
-    print("\nRunning agent...")
+    # Create a nice table for test task
+    task_table = Table(show_header=False, box=None, padding=(0, 1))
+    task_table.add_row("[bold]People:[/bold]", str(test_task['num_people']))
+    task_table.add_row("[bold]Requirements:[/bold]", ", ".join(test_task['requirements']) if test_task['requirements'] else "None")
+    task_table.add_row("[bold]Expected room:[/bold]", f"[green]{test_task['expected_choice']}[/green]")
+    
+    console.print("\n[bold]Test Task:[/bold]")
+    console.print(task_table)
+    console.print("\n[yellow]Running agent...[/yellow]\n")
     
     try:
         reward = room_selector(test_task, prompt_template_baseline())
-        print(f"\n✓ Agent test successful!")
-        print(f"  Reward: {reward:.2f} ({'CORRECT' if reward == 1.0 else 'INCORRECT'})")
+        if reward == 1.0:
+            console.print(f"\n[bold green]✓ Agent test successful![/bold green]")
+            console.print(f"  [green]Reward: {reward:.2f} (CORRECT)[/green]")
+        else:
+            console.print(f"\n[bold yellow]⚠ Agent test completed[/bold yellow]")
+            console.print(f"  [yellow]Reward: {reward:.2f} (INCORRECT - but agent is working)[/yellow]")
         return True
     except Exception as e:
-        print(f"\n✗ Agent test failed: {e}")
+        console.print(f"\n[bold red]✗ Agent test failed:[/bold red] {e}")
         import traceback
-        traceback.print_exc()
+        console.print_exception()
         return False
 
 
@@ -142,30 +155,39 @@ def main():
     provider = get_provider()
     model = get_default_model()
     
-    print("=" * 60)
-    print("Room Selector Agent - APO Training")
-    print("=" * 60)
-    print(f"Provider: {provider.upper()}")
-    print(f"Model: {model}")
-    print(f"Training dataset size: {len(dataset_train)}")
-    print(f"Validation dataset size: {len(dataset_val)}")
-    print("=" * 60)
+    # Create configuration table
+    config_table = Table(show_header=False, box=None, padding=(0, 2))
+    config_table.add_row("[bold cyan]Provider:[/bold cyan]", provider.upper())
+    config_table.add_row("[bold cyan]Model:[/bold cyan]", model)
+    config_table.add_row("[bold cyan]Training dataset:[/bold cyan]", f"{len(dataset_train)} tasks")
+    config_table.add_row("[bold cyan]Validation dataset:[/bold cyan]", f"{len(dataset_val)} tasks")
+    
+    console.print(Panel.fit(
+        "[bold blue]Room Selector Agent - APO Training[/bold blue]\n" + 
+        config_table.__str__().replace('\n', '\n'),
+        border_style="blue"
+    ))
     
     # Test agent first
     if not test_agent_baseline():
-        print("\n⚠️  Agent test failed. Please check your OpenAI API key and configuration.")
+        console.print("\n[bold red]⚠️  Agent test failed. Please check your OpenAI API key and configuration.[/bold red]")
         sys.exit(1)
     
-    print("\n" + "=" * 60)
-    print("Starting APO Training...")
-    print("=" * 60)
-    print("\nTraining will:")
-    print("  1. Run rollouts with baseline prompt")
-    print("  2. Evaluate performance")
-    print("  3. Generate critique and improve prompt")
-    print("  4. Repeat with improved prompts")
-    print("\nWatch for [Agent] logs showing individual task processing...")
-    print("=" * 60 + "\n")
+    # Training info panel
+    training_steps = [
+        "1. Run rollouts with baseline prompt",
+        "2. Evaluate performance",
+        "3. Generate critique and improve prompt",
+        "4. Repeat with improved prompts"
+    ]
+    
+    console.print("\n", Panel.fit(
+        "[bold green]Starting APO Training...[/bold green]\n\n" +
+        "[bold]Training will:[/bold]\n" +
+        "\n".join(f"  {step}" for step in training_steps) +
+        "\n\n[yellow]Watch for [Agent] logs showing individual task processing...[/yellow]",
+        border_style="green"
+    ), "\n")
     
     start_time = time.time()
     
@@ -197,21 +219,20 @@ def main():
         
         elapsed_time = time.time() - start_time
         
-        print("\n" + "=" * 60)
-        print("✓ Training Completed Successfully!")
-        print("=" * 60)
-        print(f"Total time: {elapsed_time:.1f} seconds")
-        print("\nThe APO algorithm has optimized your prompt template.")
-        print("You can now use the improved prompt for better agent performance.")
-        print("=" * 60)
+        console.print("\n", Panel.fit(
+            "[bold green]✓ Training Completed Successfully![/bold green]\n\n" +
+            f"[cyan]Total time:[/cyan] {elapsed_time:.1f} seconds\n\n" +
+            "The APO algorithm has optimized your prompt template.\n" +
+            "You can now use the improved prompt for better agent performance.",
+            border_style="green"
+        ))
         
     except KeyboardInterrupt:
-        print("\n\n⚠️  Training interrupted by user")
+        console.print("\n\n[bold yellow]⚠️  Training interrupted by user[/bold yellow]")
         sys.exit(1)
     except Exception as e:
-        print(f"\n\n✗ Training failed: {e}")
-        import traceback
-        traceback.print_exc()
+        console.print(f"\n\n[bold red]✗ Training failed:[/bold red] {e}")
+        console.print_exception()
         sys.exit(1)
 
 

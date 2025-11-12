@@ -8,6 +8,11 @@ from typing import Dict, Any
 from openai import OpenAI
 import agentlightning as agl
 from config import get_client, get_default_model
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
+console = Console(stderr=True)  # Use stderr so it doesn't interfere with return values
 
 
 # Mock room database - in a real scenario, this would query an external database
@@ -83,13 +88,18 @@ def room_selector(task: Dict[str, Any], prompt_template: agl.PromptTemplate) -> 
     Returns:
         float: Reward score between 0.0 and 1.0
     """
-    import sys
+    # Create task info table
+    task_table = Table(show_header=False, box=None, padding=(0, 1))
+    task_table.add_row("[dim]Date:[/dim]", f"{task['date']} at {task['time']}")
+    task_table.add_row("[dim]People:[/dim]", str(task['num_people']))
+    task_table.add_row("[dim]Requirements:[/dim]", ", ".join(task['requirements']) if task['requirements'] else "None")
+    task_table.add_row("[dim]Expected:[/dim]", f"[green]{task['expected_choice']}[/green]")
     
-    # Log task details
-    print(f"\n[Agent] Processing task:", file=sys.stderr)
-    print(f"  - Date: {task['date']}, Time: {task['time']}", file=sys.stderr)
-    print(f"  - People: {task['num_people']}, Requirements: {task['requirements']}", file=sys.stderr)
-    print(f"  - Expected room: {task['expected_choice']}", file=sys.stderr)
+    console.print(Panel.fit(
+        f"[bold cyan][Agent][/bold cyan] Processing task\n\n{task_table.__str__().replace(chr(10), '')}",
+        border_style="cyan",
+        padding=(0, 1)
+    ))
     
     client = get_client()
     model = get_default_model()
@@ -98,7 +108,7 @@ def room_selector(task: Dict[str, Any], prompt_template: agl.PromptTemplate) -> 
     prompt = prompt_template.format(**task)
     messages = [{"role": "user", "content": prompt}]
     
-    print(f"[Agent] Calling LLM ({model})...", file=sys.stderr)
+    console.print(f"[yellow]→[/yellow] Calling LLM ([cyan]{model}[/cyan])...")
     
     # Define the tool for the LLM to use
     tools = [
@@ -142,7 +152,7 @@ def room_selector(task: Dict[str, Any], prompt_template: agl.PromptTemplate) -> 
     
     # Check if the LLM wants to use a tool
     if tool_calls:
-        print(f"[Agent] LLM requested tool: {tool_calls[0].function.name}", file=sys.stderr)
+        console.print(f"[green]✓[/green] LLM requested tool: [bold]{tool_calls[0].function.name}[/bold]")
         messages.append(response_message)  # Append assistant's reply
         
         # Execute the tool and get the real-world data
@@ -150,14 +160,14 @@ def room_selector(task: Dict[str, Any], prompt_template: agl.PromptTemplate) -> 
             function_name = tool_call.function.name
             if function_name == "get_rooms_and_availability":
                 function_args = json.loads(tool_call.function.arguments)
-                print(f"[Agent] Querying rooms for {function_args.get('date')} at {function_args.get('time')}...", file=sys.stderr)
+                console.print(f"[yellow]→[/yellow] Querying rooms for {function_args.get('date')} at {function_args.get('time')}...")
                 # Query the room database
                 function_response = get_rooms_and_availability(
                     date=function_args.get("date"),
                     time_str=function_args.get("time"),
                     duration_min=function_args.get("duration_min"),
                 )
-                print(f"[Agent] Found {len(function_response)} available rooms", file=sys.stderr)
+                console.print(f"[green]✓[/green] Found [bold]{len(function_response)}[/bold] available rooms")
                 messages.append({
                     "tool_call_id": tool_call.id,
                     "role": "tool",
@@ -166,21 +176,24 @@ def room_selector(task: Dict[str, Any], prompt_template: agl.PromptTemplate) -> 
                 })
         
         # Second LLM call with the tool's output to get a final choice
-        print(f"[Agent] Getting final room selection from LLM...", file=sys.stderr)
+        console.print(f"[yellow]→[/yellow] Getting final room selection from LLM...")
         second_response = client.chat.completions.create(
             model=model,
             messages=messages,
         )
         final_message = second_response.choices[0].message.content or ""
     else:
-        print(f"[Agent] LLM responded directly (no tool call)", file=sys.stderr)
+        console.print(f"[yellow]→[/yellow] LLM responded directly (no tool call)")
         final_message = response_message.content or ""
     
-    print(f"[Agent] Agent selected: {final_message.strip()}", file=sys.stderr)
+    console.print(f"[cyan]→[/cyan] Agent selected: [bold]{final_message.strip()}[/bold]")
     
     # Grade the final choice to get a reward
     reward = room_selection_grader(client, final_message, task["expected_choice"])
-    print(f"[Agent] Reward: {reward:.2f} ({'✓ CORRECT' if reward == 1.0 else '✗ WRONG'})", file=sys.stderr)
+    if reward == 1.0:
+        console.print(f"[bold green]✓ Reward: {reward:.2f} (CORRECT)[/bold green]\n")
+    else:
+        console.print(f"[bold red]✗ Reward: {reward:.2f} (WRONG - expected {task['expected_choice']})[/bold red]\n")
     return reward
 
 

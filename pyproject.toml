@@ -7,6 +7,7 @@ dependencies = [
     "agentlightning",
     "openai>=1.100.0",
     "poml",
+    "rich",
 ]
 
 [build-system]
