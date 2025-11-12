@@ -155,18 +155,15 @@ def main():
     provider = get_provider()
     model = get_default_model()
     
-    # Create configuration table
-    config_table = Table(show_header=False, box=None, padding=(0, 2))
-    config_table.add_row("[bold cyan]Provider:[/bold cyan]", provider.upper())
-    config_table.add_row("[bold cyan]Model:[/bold cyan]", model)
-    config_table.add_row("[bold cyan]Training dataset:[/bold cyan]", f"{len(dataset_train)} tasks")
-    config_table.add_row("[bold cyan]Validation dataset:[/bold cyan]", f"{len(dataset_val)} tasks")
+    # Create configuration display
+    config_text = f"""[bold blue]Room Selector Agent - APO Training[/bold blue]
+
+[bold cyan]Provider:[/bold cyan] {provider.upper()}
+[bold cyan]Model:[/bold cyan] {model}
+[bold cyan]Training dataset:[/bold cyan] {len(dataset_train)} tasks
+[bold cyan]Validation dataset:[/bold cyan] {len(dataset_val)} tasks"""
     
-    console.print(Panel.fit(
-        "[bold blue]Room Selector Agent - APO Training[/bold blue]\n" + 
-        config_table.__str__().replace('\n', '\n'),
-        border_style="blue"
-    ))
+    console.print(Panel.fit(config_text, border_style="blue"))
     
     # Test agent first
     if not test_agent_baseline():

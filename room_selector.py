@@ -88,18 +88,16 @@ def room_selector(task: Dict[str, Any], prompt_template: agl.PromptTemplate) -> 
     Returns:
         float: Reward score between 0.0 and 1.0
     """
-    # Create task info table
-    task_table = Table(show_header=False, box=None, padding=(0, 1))
-    task_table.add_row("[dim]Date:[/dim]", f"{task['date']} at {task['time']}")
-    task_table.add_row("[dim]People:[/dim]", str(task['num_people']))
-    task_table.add_row("[dim]Requirements:[/dim]", ", ".join(task['requirements']) if task['requirements'] else "None")
-    task_table.add_row("[dim]Expected:[/dim]", f"[green]{task['expected_choice']}[/green]")
+    # Create task info display
+    reqs = ", ".join(task['requirements']) if task['requirements'] else "None"
+    task_info = f"""[bold cyan][Agent][/bold cyan] Processing task
+
+[dim]Date:[/dim] {task['date']} at {task['time']}
+[dim]People:[/dim] {task['num_people']}
+[dim]Requirements:[/dim] {reqs}
+[dim]Expected:[/dim] [green]{task['expected_choice']}[/green]"""
     
-    console.print(Panel.fit(
-        f"[bold cyan][Agent][/bold cyan] Processing task\n\n{task_table.__str__().replace(chr(10), '')}",
-        border_style="cyan",
-        padding=(0, 1)
-    ))
+    console.print(Panel.fit(task_info, border_style="cyan", padding=(0, 1)))
     
     client = get_client()
     model = get_default_model()
