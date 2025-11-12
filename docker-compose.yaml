@@ -8,12 +8,12 @@ services:
     environment:
       - LLM_PROVIDER=${LLM_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      # Set AgentOps log directory to /tmp (always writable)
-      - AGENTOPS_LOG_DIR=/tmp
+      # AgentOps log directory will be set by entrypoint script
+      # To disable AgentOps entirely, set AGENTOPS_DISABLED=true
+      - AGENTOPS_DISABLED=${AGENTOPS_DISABLED:-false}
     volumes:
       # Mount the current directory for development
       - .:/app
-      # Mount tmp directory for logs
-      - /tmp:/tmp
-    command: python run_apo.py
+    # Command is handled by entrypoint script
+    command: ["run_apo.py"]
 
