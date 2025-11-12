@@ -41,6 +41,8 @@ The Room Selector Agent is an AI agent that selects meeting rooms based on requi
 
 That's it! The training will start automatically.
 
+**Note for Cluster Environments:** This setup works without root privileges. If you encounter permission issues with AgentOps logging, you can disable it by setting `AGENTOPS_DISABLED=true` in your `.env` file or environment.
+
 ## Project Structure
 
 ```
