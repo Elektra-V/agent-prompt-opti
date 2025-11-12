@@ -89,10 +89,86 @@ def load_datasets():
     return train_dataset, val_dataset
 
 
+def test_agent_baseline():
+    """
+    Test the agent with baseline prompt before training to verify it works.
+    """
+    print("\n" + "=" * 60)
+    print("Testing Agent with Baseline Prompt")
+    print("=" * 60)
+    
+    from config import get_client, get_default_model
+    from room_selector import prompt_template_baseline
+    
+    # Test with one task
+    test_task = {
+        "date": "2024-01-15",
+        "time": "10:00 AM",
+        "duration_min": 60,
+        "num_people": 4,
+        "requirements": ["whiteboard"],
+        "expected_choice": "A103",
+    }
+    
+    print(f"\nTest Task:")
+    print(f"  People: {test_task['num_people']}, Requirements: {test_task['requirements']}")
+    print(f"  Expected room: {test_task['expected_choice']}")
+    print("\nRunning agent...")
+    
+    try:
+        reward = room_selector(test_task, prompt_template_baseline())
+        print(f"\n✓ Agent test successful!")
+        print(f"  Reward: {reward:.2f} ({'CORRECT' if reward == 1.0 else 'INCORRECT'})")
+        return True
+    except Exception as e:
+        print(f"\n✗ Agent test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     """
     Main training function that sets up the Trainer and APO algorithm.
     """
+    import sys
+    import time
+    
+    # Load datasets
+    dataset_train, dataset_val = load_datasets()
+    
+    # Show configuration
+    from config import get_provider, get_default_model
+    provider = get_provider()
+    model = get_default_model()
+    
+    print("=" * 60)
+    print("Room Selector Agent - APO Training")
+    print("=" * 60)
+    print(f"Provider: {provider.upper()}")
+    print(f"Model: {model}")
+    print(f"Training dataset size: {len(dataset_train)}")
+    print(f"Validation dataset size: {len(dataset_val)}")
+    print("=" * 60)
+    
+    # Test agent first
+    if not test_agent_baseline():
+        print("\n⚠️  Agent test failed. Please check your OpenAI API key and configuration.")
+        sys.exit(1)
+    
+    print("\n" + "=" * 60)
+    print("Starting APO Training...")
+    print("=" * 60)
+    print("\nTraining will:")
+    print("  1. Run rollouts with baseline prompt")
+    print("  2. Evaluate performance")
+    print("  3. Generate critique and improve prompt")
+    print("  4. Repeat with improved prompts")
+    print("\nWatch for [Agent] logs showing individual task processing...")
+    print("=" * 60 + "\n")
+    
+    start_time = time.time()
+    
     # Initialize async client for the configured provider
     openai_client = get_async_client()
     
@@ -111,33 +187,32 @@ def main():
         adapter=agl.TraceToMessages(),
     )
     
-    # Load datasets
-    dataset_train, dataset_val = load_datasets()
-    
-    # Show configuration
-    from config import get_provider, get_default_model
-    provider = get_provider()
-    model = get_default_model()
-    
-    print("=" * 60)
-    print("Room Selector Agent - APO Training")
-    print("=" * 60)
-    print(f"Provider: {provider.upper()}")
-    print(f"Model: {model}")
-    print(f"Training dataset size: {len(dataset_train)}")
-    print(f"Validation dataset size: {len(dataset_val)}")
-    print("=" * 60)
-    print("Starting training with APO...")
-    print()
-    
-    # Start the training process!
-    trainer.fit(
-        agent=room_selector,
-        train_dataset=dataset_train,
-        val_dataset=dataset_val
-    )
-    
-    print("Training completed!")
+    try:
+        # Start the training process!
+        trainer.fit(
+            agent=room_selector,
+            train_dataset=dataset_train,
+            val_dataset=dataset_val
+        )
+        
+        elapsed_time = time.time() - start_time
+        
+        print("\n" + "=" * 60)
+        print("✓ Training Completed Successfully!")
+        print("=" * 60)
+        print(f"Total time: {elapsed_time:.1f} seconds")
+        print("\nThe APO algorithm has optimized your prompt template.")
+        print("You can now use the improved prompt for better agent performance.")
+        print("=" * 60)
+        
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Training interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n\n✗ Training failed: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":
