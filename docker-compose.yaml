@@ -8,8 +8,12 @@ services:
     environment:
       - LLM_PROVIDER=${LLM_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Set AgentOps log directory to /tmp (always writable)
+      - AGENTOPS_LOG_DIR=/tmp
     volumes:
       # Mount the current directory for development
       - .:/app
+      # Mount tmp directory for logs
+      - /tmp:/tmp
     command: python run_apo.py
 

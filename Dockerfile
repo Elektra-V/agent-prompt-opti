@@ -23,6 +23,9 @@ COPY run_apo.py ./
 # Install agentlightning and its dependencies, including poml
 RUN uv pip install --system agentlightning "openai>=1.100.0" poml
 
+# Create logs directory with write permissions for AgentOps
+RUN mkdir -p /app/logs && chmod 777 /app/logs
+
 # Set the default command (using system Python since dependencies are installed system-wide)
 CMD ["python", "run_apo.py"]
 
