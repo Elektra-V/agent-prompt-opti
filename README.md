@@ -56,6 +56,48 @@ That's it! The training will start automatically, just like in the official tuto
 
 **Note:** AgentOps is disabled by default to avoid permission issues. The APO training works perfectly without it.
 
+### What to Expect
+
+When you run the training, you'll see:
+
+1. **Configuration Display**: Shows provider, model, and dataset sizes
+2. **Agent Test**: Runs a single task to verify the agent works before training
+3. **Training Progress**: Detailed logs showing:
+   - Each task being processed (`[Agent] Processing task...`)
+   - LLM calls and tool usage
+   - Room selections made by the agent
+   - Reward scores (✓ CORRECT or ✗ WRONG)
+4. **Training Completion**: Summary with total time and success message
+
+**Example Output:**
+```
+============================================================
+Room Selector Agent - APO Training
+============================================================
+Provider: OPENAI
+Model: gpt-4o-mini
+Training dataset size: 5
+Validation dataset size: 3
+============================================================
+
+[Agent] Processing task:
+  - Date: 2024-01-15, Time: 10:00 AM
+  - People: 4, Requirements: ['whiteboard']
+  - Expected room: A103
+[Agent] Calling LLM (gpt-4o-mini)...
+[Agent] LLM requested tool: get_rooms_and_availability
+[Agent] Found 6 available rooms
+[Agent] Agent selected: A103
+[Agent] Reward: 1.00 (✓ CORRECT)
+```
+
+**How to Verify It's Working:**
+- ✓ You see `[Agent]` logs showing task processing
+- ✓ You see LLM calls and tool usage
+- ✓ You see reward scores (0.0 to 1.0)
+- ✓ Training completes without errors
+- ✓ You see "Training Completed Successfully!" message
+
 ## Project Structure
 
 ```
