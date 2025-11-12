@@ -11,19 +11,29 @@ The Room Selector Agent is an AI agent that selects meeting rooms based on requi
 - ✅ OpenAI function calling/tool use
 - ✅ APO (Automatic Prompt Optimization) training
 - ✅ Automatic prompt improvement through training
-- ✅ Containerized with Docker + UV package manager
-- ✅ Linux-compatible (runs on macOS via Docker)
+- ✅ Uses UV package manager (as shown in official tutorial)
 
 ## Quick Start
 
 ### Prerequisites
 
-- Docker and Docker Compose installed
+- Python 3.10+ (Linux required - Agent-lightning doesn't support macOS natively)
+- [UV](https://github.com/astral-sh/uv) package manager
 - OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
 
-### Running the Demo
+### Installation
 
-1. **Set up your OpenAI API key**:
+1. **Install UV** (if not already installed):
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   uv sync
+   ```
+
+3. **Set up your OpenAI API key**:
    ```bash
    export OPENAI_API_KEY=your_openai_key_here
    ```
@@ -33,15 +43,16 @@ The Room Selector Agent is an AI agent that selects meeting rooms based on requi
    OPENAI_API_KEY=your_openai_key_here
    ```
 
-2. **Build and run with Docker**:
-   ```bash
-   docker compose build
-   docker compose run --rm app
-   ```
+### Running the Demo
 
-That's it! The training will start automatically.
+Simply run:
+```bash
+uv run python run_apo.py
+```
 
-**Note for Cluster Environments:** This setup works without root privileges. If you encounter permission issues with AgentOps logging, you can disable it by setting `AGENTOPS_DISABLED=true` in your `.env` file or environment.
+That's it! The training will start automatically, just like in the official tutorial.
+
+**Note:** AgentOps is disabled by default to avoid permission issues. The APO training works perfectly without it.
 
 ## Project Structure
 
@@ -50,9 +61,7 @@ multiagent/
 ├── room_selector.py      # Agent implementation with @rollout decorator
 ├── run_apo.py            # Training script with APO algorithm
 ├── config.py             # LLM provider configuration
-├── Dockerfile            # Container configuration
-├── docker-compose.yaml   # Docker Compose setup
-├── pyproject.toml        # UV project dependencies
+├── pyproject.toml         # UV project dependencies
 ├── env.example           # Environment variables template
 └── README.md             # This file
 ```
@@ -104,44 +113,34 @@ With the provided hyperparameters and datasets, you should see:
 
 The training typically takes a few minutes depending on your API rate limits and the number of parallel runners.
 
-## Requirements
-
-- **OpenAI API Key**: Required for both the agent and APO algorithm
-- **Docker**: For running on macOS (Agent-lightning requires Linux)
-- **UV**: Package manager (installed automatically in Docker)
-
 ## Package Management
 
-This project uses [UV](https://github.com/astral-sh/uv) as the package manager for fast and reliable dependency management. Dependencies are defined in `pyproject.toml`.
+This project uses [UV](https://github.com/astral-sh/uv) as the package manager, matching the official Agent-lightning tutorial.
 
 ### Adding Dependencies
 
 To add a new dependency:
 ```bash
-docker compose run --rm app uv add package-name
+uv add package-name
 ```
 
-## Docker Usage
+### Updating Dependencies
 
-### Building the Image
+To update all dependencies:
+```bash
+uv sync --upgrade
+```
+
+## Docker (Optional - for macOS users only)
+
+If you're on macOS and need Linux compatibility, Docker is available but not required:
 
 ```bash
 docker compose build
+docker compose run --rm app
 ```
 
-### Running Commands
-
-Run any Python command in the container:
-```bash
-docker compose run --rm app python your_script.py
-```
-
-### Interactive Shell
-
-Get an interactive shell in the container:
-```bash
-docker compose run --rm app /bin/bash
-```
+**Note:** The official tutorial uses `uv run` directly on Linux, which is simpler and faster.
 
 ## Learn More
 
