@@ -1,0 +1,14 @@
+[project]
+name = "room-selector-agent"
+version = "0.1.0"
+description = "Room Selector Agent demo using Agent-lightning with APO"
+requires-python = ">=3.10"
+dependencies = [
+    "agentlightning",
+    "openai>=1.100.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
