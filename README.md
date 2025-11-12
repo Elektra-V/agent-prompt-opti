@@ -131,16 +131,6 @@ To update all dependencies:
 uv sync --upgrade
 ```
 
-## Docker (Optional - for macOS users only)
-
-If you're on macOS and need Linux compatibility, Docker is available but not required:
-
-```bash
-docker compose build
-docker compose run --rm app
-```
-
-**Note:** The official tutorial uses `uv run` directly on Linux, which is simpler and faster.
 
 ## Learn More
 
