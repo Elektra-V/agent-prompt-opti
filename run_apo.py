@@ -197,7 +197,7 @@ def main():
     # Configure the Trainer
     trainer = agl.Trainer(
         algorithm=algo,
-        n_runners=4,  # Run 4 agents in parallel to try out the prompts
+        n_runners=2,  # Run 2 agents in parallel (lower cost, recommended)
         initial_resources={
             # The initial prompt template to be tuned
             "prompt_template": prompt_template_baseline()
