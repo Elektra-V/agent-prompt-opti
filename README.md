@@ -33,14 +33,16 @@ The Room Selector Agent is an AI agent that selects meeting rooms based on requi
    uv sync
    ```
 
-3. **Set up your OpenAI API key**:
+3. **Set up your OpenAI API key and disable AgentOps**:
    ```bash
    export OPENAI_API_KEY=your_openai_key_here
+   export AGENTOPS_DISABLED=true
    ```
    
    Or create a `.env` file:
    ```
    OPENAI_API_KEY=your_openai_key_here
+   AGENTOPS_DISABLED=true
    ```
 
 ### Running the Demo
