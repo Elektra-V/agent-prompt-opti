@@ -46,7 +46,31 @@ def get_provider() -> str:
     Get the provider name from environment variable, default to openai.
     OpenAI is required for APO algorithm (uses gpt-5-mini for critique/rewrite).
     """
-    return os.getenv("LLM_PROVIDER", "openai").lower()
+    provider = os.getenv("LLM_PROVIDER", "openai").lower()
+    
+    # APO algorithm requires OpenAI models for critique/rewrite steps
+    # If user tries to use a different provider, warn and default to openai
+    if provider not in PROVIDERS:
+        import warnings
+        warnings.warn(
+            f"Provider '{provider}' is not supported. "
+            f"Supported providers: {', '.join(PROVIDERS.keys())}. "
+            f"Defaulting to 'openai' (required for APO algorithm).",
+            UserWarning
+        )
+        return "openai"
+    
+    # Warn if using non-OpenAI provider (APO still needs OpenAI internally)
+    if provider != "openai":
+        import warnings
+        warnings.warn(
+            f"Using provider '{provider}' for agent, but APO algorithm "
+            f"still requires OpenAI models for critique/rewrite steps. "
+            f"Make sure OPENAI_API_KEY is set.",
+            UserWarning
+        )
+    
+    return provider
 
 
 def get_client() -> OpenAI:

@@ -55,6 +55,3 @@ agentops.log
 .coverage
 htmlcov/
 
-# Docker
-.dockerignore
-
