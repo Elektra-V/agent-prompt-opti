@@ -98,6 +98,49 @@ Validation dataset size: 3
 - ✓ Training completes without errors
 - ✓ You see "Training Completed Successfully!" message
 
+**How to Validate Training Success:**
+
+The training script now includes comprehensive validation:
+
+1. **Baseline Evaluation** (before training):
+   - Runs the agent on the validation dataset with the baseline prompt
+   - Shows accuracy percentage and average reward
+   - Example: "Accuracy: 66.7% (2/3)"
+
+2. **Training Progress**:
+   - Watch for `[Agent]` logs showing each task being processed
+   - Each task shows: ✓ CORRECT (reward 1.0) or ✗ WRONG (reward 0.0)
+   - Monitor if rewards improve over time
+
+3. **Optimized Evaluation** (after training):
+   - Runs the agent on the same validation dataset with the optimized prompt
+   - Compares baseline vs optimized performance side-by-side
+   - Shows detailed results for each validation task
+
+4. **Performance Comparison Table**:
+   - **Accuracy**: Baseline vs Optimized (e.g., 66.7% → 100.0%)
+   - **Average Reward**: Baseline vs Optimized (e.g., 0.667 → 1.000)
+   - **Improvement**: Shows the delta (e.g., +33.3%)
+
+5. **Detailed Results Table**:
+   - Shows each validation task
+   - Shows whether baseline was correct (✓/✗)
+   - Shows whether optimized was correct (✓/✗)
+   - Shows reward scores for both
+
+**What Good Training Looks Like:**
+- ✓ Optimized accuracy ≥ Baseline accuracy (should improve or stay same)
+- ✓ Optimized average reward ≥ Baseline average reward
+- ✓ Positive improvement percentage
+- ✓ More ✓ marks in optimized column than baseline column
+- ✓ No errors or exceptions during training
+
+**If Training Didn't Improve:**
+- This is normal! APO may not always improve on small datasets
+- The baseline prompt might already be good
+- Try with a larger dataset or different initial prompt
+- Check that validation tasks are diverse enough
+
 ## Project Structure
 
 ```

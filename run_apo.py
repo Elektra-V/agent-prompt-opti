@@ -95,6 +95,41 @@ def load_datasets():
     return train_dataset, val_dataset
 
 
+def evaluate_agent(dataset, prompt_template, label="Agent"):
+    """
+    Evaluate agent performance on a dataset.
+    Returns: (accuracy, average_reward, results_list)
+    """
+    results = []
+    correct = 0
+    total_reward = 0.0
+    
+    for task in dataset:
+        try:
+            reward = room_selector(task, prompt_template)
+            results.append({
+                "task": task,
+                "reward": reward,
+                "correct": reward == 1.0
+            })
+            if reward == 1.0:
+                correct += 1
+            total_reward += reward
+        except Exception as e:
+            console.print(f"[red]Error evaluating task: {e}[/red]")
+            results.append({
+                "task": task,
+                "reward": 0.0,
+                "correct": False,
+                "error": str(e)
+            })
+    
+    accuracy = correct / len(dataset) if dataset else 0.0
+    avg_reward = total_reward / len(dataset) if dataset else 0.0
+    
+    return accuracy, avg_reward, results
+
+
 def test_agent_baseline():
     """
     Test the agent with baseline prompt before training to verify it works.
@@ -170,6 +205,20 @@ def main():
         console.print("\n[bold red]⚠️  Agent test failed. Please check your OpenAI API key and configuration.[/bold red]")
         sys.exit(1)
     
+    # Evaluate baseline performance on validation set
+    console.print("\n", Panel.fit("[bold yellow]Evaluating Baseline Performance[/bold yellow]", border_style="yellow"))
+    baseline_prompt = prompt_template_baseline()
+    baseline_acc, baseline_avg_reward, baseline_results = evaluate_agent(
+        dataset_val, baseline_prompt, "Baseline"
+    )
+    
+    metrics_table = Table(title="Baseline Validation Metrics", show_header=True, header_style="bold yellow")
+    metrics_table.add_column("Metric", style="cyan")
+    metrics_table.add_column("Value", style="green")
+    metrics_table.add_row("Accuracy", f"{baseline_acc * 100:.1f}% ({sum(r['correct'] for r in baseline_results)}/{len(baseline_results)})")
+    metrics_table.add_row("Average Reward", f"{baseline_avg_reward:.3f}")
+    console.print(metrics_table)
+    
     # Training info panel
     training_steps = [
         "1. Run rollouts with baseline prompt",
@@ -216,9 +265,80 @@ def main():
         
         elapsed_time = time.time() - start_time
         
+        # Get the optimized prompt from trainer resources
+        # The APO algorithm updates the prompt_template in trainer.resources
+        try:
+            optimized_prompt = trainer.resources.get("prompt_template")
+            if optimized_prompt is None:
+                console.print("[yellow]Warning: Could not retrieve optimized prompt, using baseline for comparison[/yellow]")
+                optimized_prompt = baseline_prompt
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not retrieve optimized prompt ({e}), using baseline for comparison[/yellow]")
+            optimized_prompt = baseline_prompt
+        
+        # Evaluate optimized performance
+        console.print("\n", Panel.fit("[bold green]Evaluating Optimized Performance[/bold green]", border_style="green"))
+        optimized_acc, optimized_avg_reward, optimized_results = evaluate_agent(
+            dataset_val, optimized_prompt, "Optimized"
+        )
+        
+        # Display comparison metrics
+        comparison_table = Table(title="Performance Comparison", show_header=True, header_style="bold cyan")
+        comparison_table.add_column("Metric", style="cyan")
+        comparison_table.add_column("Baseline", style="yellow")
+        comparison_table.add_column("Optimized", style="green")
+        comparison_table.add_column("Improvement", style="magenta")
+        
+        accuracy_improvement = optimized_acc - baseline_acc
+        reward_improvement = optimized_avg_reward - baseline_avg_reward
+        
+        comparison_table.add_row(
+            "Accuracy",
+            f"{baseline_acc * 100:.1f}%",
+            f"{optimized_acc * 100:.1f}%",
+            f"{'+' if accuracy_improvement >= 0 else ''}{accuracy_improvement * 100:.1f}%"
+        )
+        comparison_table.add_row(
+            "Avg Reward",
+            f"{baseline_avg_reward:.3f}",
+            f"{optimized_avg_reward:.3f}",
+            f"{'+' if reward_improvement >= 0 else ''}{reward_improvement:.3f}"
+        )
+        
+        console.print(comparison_table)
+        
+        # Show detailed results
+        console.print("\n[bold]Detailed Validation Results:[/bold]")
+        results_table = Table(show_header=True, header_style="bold")
+        results_table.add_column("Task", style="cyan")
+        results_table.add_column("Expected", style="yellow")
+        results_table.add_column("Baseline", style="yellow")
+        results_table.add_column("Optimized", style="green")
+        
+        for i, (baseline_res, optimized_res) in enumerate(zip(baseline_results, optimized_results)):
+            task = baseline_res["task"]
+            reqs = ", ".join(task['requirements']) if task['requirements'] else "None"
+            task_desc = f"{task['num_people']}p, {reqs}"
+            
+            baseline_status = "✓" if baseline_res['correct'] else "✗"
+            optimized_status = "✓" if optimized_res['correct'] else "✗"
+            
+            results_table.add_row(
+                task_desc,
+                task['expected_choice'],
+                f"{baseline_status} ({baseline_res['reward']:.2f})",
+                f"{optimized_status} ({optimized_res['reward']:.2f})"
+            )
+        
+        console.print(results_table)
+        
+        # Final summary
         console.print("\n", Panel.fit(
             "[bold green]✓ Training Completed Successfully![/bold green]\n\n" +
             f"[cyan]Total time:[/cyan] {elapsed_time:.1f} seconds\n\n" +
+            f"[bold]Baseline Performance:[/bold] {baseline_acc * 100:.1f}% accuracy\n" +
+            f"[bold]Optimized Performance:[/bold] {optimized_acc * 100:.1f}% accuracy\n" +
+            f"[bold]Improvement:[/bold] {accuracy_improvement * 100:+.1f}% points\n\n" +
             "The APO algorithm has optimized your prompt template.\n" +
             "You can now use the improved prompt for better agent performance.",
             border_style="green"
